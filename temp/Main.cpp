@@ -10,10 +10,6 @@
 #include <random>
 #include <cpprest/http_client.h>
 
-#if 0
-add 2 user for online transaction using webSocket
-#endif
-
 using namespace web;
 using namespace web::http;
 using namespace web::http::client;
@@ -61,27 +57,26 @@ std::unordered_set<std::string> TransactionIDGenerator::generatedIDs;
 
 // Get Current Date and time
 class CurrentTime{
-    public:
-        static std::string getCurrentDate(){
-            time_t tt;
+public:
+    static std::string getCurrentDate(){
+        time_t tt;
 
-            // Declaring variable to store return value of 
-            // localtime() 
-            struct tm* ti;
+        // Declaring variable to store return value of 
+        // localtime() 
+        struct tm* ti;
 
-            // Applying time() 
-            time(&tt);
+        // Applying time() 
+        time(&tt);
 
-            // Using localtime() 
-            ti = localtime(&tt);
-            
-            std::string time = asctime(ti);
-            return time;
-        }
+        // Using localtime() 
+        ti = localtime(&tt);
+        
+        std::string time = asctime(ti);
+        return time;
+    }
 };
 
 // Custom exceptions
-
 class BankingException : public std::exception {
 public:
     explicit BankingException(const std::string& message) : message_(message) {}
@@ -109,13 +104,13 @@ public:
 };
 
 class DepositAmountNegative: public BankingException{
-    public:
-        DepositAmountNegative(): BankingException("Deposit amount should not be negative!") {}
+public:
+    DepositAmountNegative(): BankingException("Deposit amount should not be negative!") {}
 };
 
 class WithdrawalLimitExceedException: public BankingException{
-    public:
-        WithdrawalLimitExceedException(): BankingException("Withdrawl limit exceded, After this charges may applies") {}
+public:
+    WithdrawalLimitExceedException(): BankingException("Withdrawl limit exceded, After this charges may applies") {}
 };
 
 // TransactionHistory class
@@ -147,7 +142,7 @@ private:
 public:
     Transaction(const std::string transactionId, const std::string& date, const std::string& type, double amt, const std::string& desc)
         : transactionId(TransactionIDGenerator::generateTransactionID()), date(date), typeOfTransaction(type), amount(amt), description(desc) {}
-
+    
     std::string getTransactionDetails() const {
         return "Transaction ID: " + transactionId + "\nDate: " + date + "\nType: " + typeOfTransaction + "\nAmount: ₹" + std::to_string(amount) + "\nDescription: " + description;
     }
@@ -158,7 +153,6 @@ private:
     std::string accountNumber;
     std::string accountHolderName;
     std::string atmPin;
-    // std::string email;
 
 public:
     BankUser(std::string accNum, std::string accHolderName, std::string pin)
@@ -180,584 +174,339 @@ public:
         }
     }
 };
-// LoanAccount class
-class LoanAccount : public BankUser {
-private:
-    double loanAmount;
-    double interestRate;
-    int tenure; // in months
-    double emi;
-    TransactionHistory transactionHistory;
 
-public:
-    LoanAccount(const std::string& accNum, const std::string& accHolderName, const std::string& pin, double loanAmt, double interest, int tenure)
-        : BankUser(accNum, accHolderName, pin), loanAmount(loanAmt), interestRate(interest), tenure(tenure) {
-        calculateEMI();
-    }
-
-    void calculateEMI() {
-        double monthlyInterestRate = interestRate / 12 / 100;
-        emi = (loanAmount * monthlyInterestRate) / (1 - std::pow(1 + monthlyInterestRate, -tenure));
-    }
-
-    void makePayment(double amount) {
-        loanAmount -= amount;
-        transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Loan payment", amount, "Loan payment"));
-    }
-
-    void getLoanDetails() const {
-        std::cout << "Loan Account Summary:\n";
-        std::cout << "Account Holder Name: " << getAccountHolderName() << "\nAccount Number: " << getAccountNumber() << "\nRemaining Loan Amount: ₹" << loanAmount << "\nEMI: ₹" << emi << std::endl;
-        transactionHistory.displayTransactionHistory();
-    }
-};
-
-#if 0
-types of loan
-1.gold loan 
-2.personal loan 
-3.car loan 
-4.home loan 
-5. education loan 
-#endif 
-
-// CreditCardAccount class
-class CreditCardAccount : public BankUser {
-private:
-    double creditLimit;
-    double currentSpending;
-    std::string dueDate;
-    double interestRate;
-    TransactionHistory transactionHistory;
-
-public:
-    CreditCardAccount(const std::string& accNum, const std::string& accHolderName, const std::string& pin, double limit, double interest)
-        : BankUser(accNum, accHolderName, pin), creditLimit(limit), currentSpending(0), dueDate("2024-08-05"), interestRate(interest) {}
-
-    void makePurchase(double amount) {
-        if (currentSpending + amount <= creditLimit) {
-            currentSpending += amount;
-            transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Credit Card Account", amount, "Purchase happens using Credit Card"));
-        } else {
-            throw InvalidTransactionException();
-        }
-    }
-
-    void makePayment(double amount) {
-        if (amount <= currentSpending) {
-            currentSpending -= amount;
-            transactionHistory.addTransaction((Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Credit Card Account", amount, "Credit Card Payment Done")));
-        } else {
-            throw InvalidTransactionException();
-        }
-    }
-
-    void calculateInterest() {
-        double interest = currentSpending * (interestRate / 100);
-        currentSpending += interest;
-    }
-
-    void getCreditCardDetails() const {
-        std::cout << "Credit Card Account Summary:\n";
-        std::cout << "Account Holder Name: " << getAccountHolderName() << "\nAccount Number: " << getAccountNumber() << "\nCurrent Spending: ₹" << currentSpending << "\nCredit Limit: ₹" << creditLimit << "\nDue Date: " << dueDate << std::endl;
-        transactionHistory.displayTransactionHistory();
-    }
-};
-
-// CurrentAccount base class
-class CurrentAccount : public BankUser {
-private:
-    // min balance check for month
-    std::vector<Transaction> transactions;
-    static int transactionCounter;
-    double minBalance;
-
+// Loan Class
+class Loan {
 protected:
-    double balance;
+    double amount;
+    int durationMonths;
 
 public:
-    CurrentAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal)
-        : BankUser(accNum, accHolderName, atmPin), balance(bal), minBalance(50000) {}
+    Loan(double amt, int months)
+        : amount(amt), durationMonths(months) {}
 
-    virtual double checkBalance() const {
-        return balance;
+    virtual double calculateEMI() const = 0;
+    virtual void displayLoanDetails() const = 0;
+    virtual double getTotalPayment() const {
+        return calculateEMI() * durationMonths;
+    }
+};
+
+class PersonalLoan : public Loan {
+private:
+    std::string purpose;
+    double interestRate;
+
+public:
+    PersonalLoan(double amt, double rate, int months, std::string purpose)
+        : Loan(amt, months), purpose(purpose), interestRate(rate) {}
+
+    double calculateEMI() const override {
+        // EMI calculation logic for personal loan
+        // Example calculation:
+        double monthlyRate = interestRate / 12.0 / 100.0;
+        double emi = (amount * monthlyRate) / (1 - pow(1 + monthlyRate, -durationMonths));
+        return emi;
     }
 
-    void deposit(double amount) {
-        if (amount < 0) {
+    void displayLoanDetails() const override {
+        std::cout << "Personal Loan Details:" << std::endl;
+        std::cout << "Amount: $" << amount << ", Interest Rate: " << interestRate << "%, Duration: " << durationMonths << " months" << std::endl;
+        std::cout << "Purpose: " << purpose << std::endl;
+    }
+};
+
+class CarLoan : public Loan {
+private:
+    std::string carModel;
+    int year;
+    double interestRate;
+
+public:
+    CarLoan(double amt, double rate, int months, std::string model, int year)
+        : Loan(amt, months), carModel(model), year(year), interestRate(rate) {}
+
+    double calculateEMI() const override {
+        // EMI calculation logic for car loan
+        // Example calculation:
+        double monthlyRate = interestRate / 12.0 / 100.0;
+        double emi = (amount * monthlyRate) / (1 - pow(1 + monthlyRate, -durationMonths));
+        return emi;
+    }
+
+    void displayLoanDetails() const override {
+        std::cout << "Car Loan Details:" << std::endl;
+        std::cout << "Amount: $" << amount << ", Interest Rate: " << interestRate << "%, Duration: " << durationMonths << " months" << std::endl;
+        std::cout << "Car Model: " << carModel << ", Year: " << year << std::endl;
+    }
+};
+
+class HomeLoan : public Loan {
+private:
+    std::string propertyAddress;
+    double interestRate;
+
+public:
+    HomeLoan(double amt, double rate, int months, std::string address)
+        : Loan(amt, months), propertyAddress(address), interestRate(rate) {}
+
+    double calculateEMI() const override {
+        // EMI calculation logic for home loan
+        // Example calculation:
+        double monthlyRate = interestRate / 12.0 / 100.0;
+        double emi = (amount * monthlyRate) / (1 - pow(1 + monthlyRate, -durationMonths));
+        return emi;
+    }
+
+    void displayLoanDetails() const override {
+        std::cout << "Home Loan Details:" << std::endl;
+        std::cout << "Amount: $" << amount << ", Interest Rate: " << interestRate << "%, Duration: " << durationMonths << " months" << std::endl;
+        std::cout << "Property Address: " << propertyAddress << std::endl;
+    }
+};
+
+class StudentLoan : public Loan {
+private:
+    std::string universityName;
+    double interestRate;
+
+public:
+    StudentLoan(double amt, double rate, int months, std::string university)
+        : Loan(amt, months), universityName(university), interestRate(rate) {}
+
+    double calculateEMI() const override {
+        // EMI calculation logic for student loan
+        // Example calculation:
+        double monthlyRate = interestRate / 12.0 / 100.0;
+        double emi = (amount * monthlyRate) / (1 - pow(1 + monthlyRate, -durationMonths));
+        return emi;
+    }
+
+    void displayLoanDetails() const override {
+        std::cout << "Student Loan Details:" << std::endl;
+        std::cout << "Amount: $" << amount << ", Interest Rate: " << interestRate << "%, Duration: " << durationMonths << " months" << std::endl;
+        std::cout << "University: " << universityName << std::endl;
+    }
+};
+
+// BankAccount class
+class BankAccount {
+protected:
+    std::string accountNumber;
+    double balance;
+    double interestRate;
+    std::string accountType;
+
+public:
+    BankAccount(const std::string& accNumber, double initialDeposit, double rate, const std::string& type)
+        : accountNumber(accNumber), balance(initialDeposit), interestRate(rate), accountType(type) {}
+
+    virtual void deposit(double amount) {
+        if (amount <= 0) {
             throw DepositAmountNegative();
         }
         balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Deposit", amount, "Deposited amount");
+        std::cout << "Deposited: ₹" << amount << std::endl;
     }
 
     virtual void withdraw(double amount) {
-        if (amount <= balance && balance<50000) {
-            balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
-        } else {
-            throw InsufficientFundsException();
-        }
-    }
-
-    std::string getAccountInfo() const {
-        return "Account Number: " + getAccountNumber() + "\nAccount Holder: " + getAccountHolderName() + "\nBalance: ₹" + std::to_string(balance);
-    }
-
-    void recordTransaction(std::string transactionId, const std::string date ,const std::string& type, double amount, const std::string& description) {
-        transactions.emplace_back(transactionId ,date ,type, amount, description);
-    }
-
-    void displayTransactionHistory() const {
-        for (const auto& transaction : transactions) {
-            std::cout << transaction.getTransactionDetails() << std::endl;
-        }
-    }
-
-    virtual ~CurrentAccount() {}
-};
-
-int CurrentAccount::transactionCounter = 0;
-
-// SavingsAccount derived class
-class SavingsAccount : public BankUser {
-private:
-    std::vector<Transaction> transactions;
-    double interestRate;
-    int withdrawalCount;
-    int maxWithdrawalsPerMonth;
-    double withdrawalFee;
-    double minimumBalance;
-    double balance;
-
-public:
-    SavingsAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int maxWithdrawPerMonth, double fee)
-        : BankUser(accNum, accHolderName, atmPin), balance(bal), interestRate(interest), withdrawalCount(0), maxWithdrawalsPerMonth(maxWithdrawPerMonth), withdrawalFee(fee), minimumBalance(1000) {}
-
-    void addInterest() {
-        double interestAmount = balance * (interestRate / 100);
-        balance += interestAmount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
-    }
-
-    double checkBalance() const {
-        return balance;
-    }
-
-    void deposit(double amount) {
-        if (amount < 0) {
+        if (amount <= 0) {
             throw DepositAmountNegative();
         }
-        balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Deposit", amount, "Deposited amount");
-    }
-
-    void withdraw(double amount) {
-        if (withdrawalCount >= maxWithdrawalsPerMonth) {
-            balance -= withdrawalFee;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Fee", withdrawalFee, "Withdrawal limit exceeded fee");
-            std::cout << "Withdrawal limit exceeded for the month. Fee applied: ₹" << withdrawalFee << std::endl;
-        }
-        if (amount <= balance - minimumBalance) {
-            balance -= amount;
-            withdrawalCount++;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
-        } else {
+        if (amount > balance) {
             throw InsufficientFundsException();
         }
-    }
-
-    void recordTransaction(const std::string& transactionId,const std::string& date, const std::string& type, double amount, const std::string& description) {
-        transactions.emplace_back(transactionId, date, type, amount, description);
-    }
-
-    void displayTransactionHistory() const {
-        for (const auto& transaction : transactions) {
-            std::cout << transaction.getTransactionDetails() << std::endl;
-        }
-    }
-};
-
-class ZeroBalanceSavingsAccount : public BankUser {
-    private:
-        double balance;
-        int withdrawalCount;
-        int maxWithdrawalsPerDay;
-        double withdrawalFee;
-        double minimumBalance;
-        std::vector<Transaction> transactions;
-    public:
-        ZeroBalanceSavingsAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int maxWithdrawPerMonth, double fee)
-            : BankUser(accNum, accHolderName, atmPin), withdrawalCount(0), maxWithdrawalsPerDay(50000), withdrawalFee(100), minimumBalance(0) {
-            // Override minimum balance requirement for zero balance account
-        }
-
-        // No additional methods needed as per description
-        void deposit(double amount) {
-            if (amount < 0) {
-                throw DepositAmountNegative();
-            }
-            balance += amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Deposit", amount, "Deposited amount");
-        }
-
-        void recordTransaction(const std::string& transactionId,const std::string date, const std::string& type, double amount, const std::string& description) {
-            transactions.emplace_back(transactionId,date ,type, amount, description);
-        }
-
-        void withdraw(double amount) {
-            if (withdrawalCount >= maxWithdrawalsPerDay) {
-                balance -= withdrawalFee;
-                recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Fee", withdrawalFee, "Withdrawal limit exceeded fee");
-                std::cout << "Withdrawal limit exceeded for the month. Fee applied: ₹" << withdrawalFee << std::endl;
-            }
-            if (amount <= balance - minimumBalance) {
-                balance -= amount;
-                withdrawalCount++;
-                recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
-            } else {
-                throw InsufficientFundsException();
-            }
-        }
-
-        void displayTransactionHistory() const {
-            for (const auto& transaction : transactions) {
-                std::cout << transaction.getTransactionDetails() << std::endl;
-            }
-        }
-};
-
-// Special savings accounts
-class WomenSavingsAccount : public SavingsAccount {
-public:
-    // interest
-    // deposit rate are low
-    WomenSavingsAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int maxWithdrawPerMonth, double fee)
-        : SavingsAccount(accNum, accHolderName, atmPin, bal, interest, maxWithdrawPerMonth, fee) {}
-
-    void healthInsuranceBenefit() {
-        std::cout << "Health insurance benefit applied.\n";
-    }
-
-    void loanInterestDiscount() {
-        std::cout << "Loan interest discount applied.\n";
-    }
-};
-
-class KidsSavingsAccount : public SavingsAccount {
-public:
-    // zero balance inherit
-    // linked account
-    // maturity check when withdrawl
-
-    KidsSavingsAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int maxWithdrawPerMonth, double fee)
-        : SavingsAccount(accNum, accHolderName, atmPin, bal, interest, maxWithdrawPerMonth, fee) {}
-
-    void educationalBonus() {
-        std::cout << "Educational bonus applied.\n";
-    }
-
-    void parentalControl() {
-        std::cout << "Parental control activated.\n";
-    }
-};
-
-class SeniorCitizensSavingsAccount : public SavingsAccount {
-public:
-    // same as womenSavingAccount
-
-    SeniorCitizensSavingsAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int maxWithdrawPerMonth, double fee)
-        : SavingsAccount(accNum, accHolderName, atmPin, bal, interest, maxWithdrawPerMonth, fee) {}
-
-    void higherInterestRate() {
-        std::cout << "Higher interest rate applied.\n";
-    }
-
-    void medicalBenefit() {
-        std::cout << "Medical benefit applied.\n";
-    }
-};
-
-
-
-// OverdraftAccount derived class
-class OverdraftAccount : public CurrentAccount {
-private:
-    double overdraftLimit;
-    double overdraftFee;
-
-public:
-    OverdraftAccount(double m_overdraftLimit, double m_overdraftFee, std::string accNum, std::string atmPin, std::string accHolderName, double bal)
-        : CurrentAccount(accNum, atmPin , accHolderName, bal), overdraftLimit(m_overdraftLimit), overdraftFee(m_overdraftFee) {}
-
-    void withdraw(double amount) override {
-        if (amount <= balance) {
-            balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
-        } else if (amount <= balance + overdraftLimit) {
-            double overdraftAmount = amount - balance;
-            balance -= amount;
-            balance -= overdraftFee; // Apply overdraft fee
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Overdraft", overdraftAmount, "Overdraft used");
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Overdraft Fee", overdraftFee, "Overdraft fee applied");
-        } else {
+        if (amount >= 20000){
             throw WithdrawalLimitExceedException();
         }
-    }
-};
-
-// Template class for managing accounts
-class FixedDepositAccount : public BankUser {
-private:
-    std::vector<Transaction> transactions;
-    double interestRate;
-    time_t maturityDate;
-    bool isMatured;
-    double balance;
-
-
-public:
-    FixedDepositAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest, int durationInDays)
-        : BankUser(accNum, accHolderName, atmPin), interestRate(interest), isMatured(false) {
-        time_t now = time(0);
-        maturityDate = now + durationInDays * 24 * 60 * 60;
+        balance -= amount;
+        std::cout << "Withdrawn: ₹" << amount << std::endl;
     }
 
-    void withdraw(double amount) {
-        time_t now = time(0);
-        if (now >= maturityDate) {
-            isMatured = true;
-        }
-        if (isMatured) {
-            double interestAmount = balance * (interestRate / 100);
-            balance += interestAmount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Interest", interestAmount, "Interest added on maturity");
-        }
-        if (amount <= balance) {
-            balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
-        } else {
-            throw InsufficientFundsException();
-        }
+    virtual void display() const {
+        std::cout << "Account Number: " << accountNumber << "\nType: " << accountType << "\nBalance: ₹" << balance << std::endl;
     }
 
-    void recordTransaction(const std::string transactionId,std::string date ,const std::string& type, double amount, const std::string& description) {
-        transactions.emplace_back(transactionId,date,type,amount, description);
-    }
-
-    void displayTransactionHistory() const {
-        for (const auto& transaction : transactions) {
-            std::cout << transaction.getTransactionDetails() << std::endl;
-        }
-    }
-};
-
-// NRIAccount class inheriting BankUser
-class NRIAccount : public BankUser {
-private:
-    std::vector<Transaction> transactions;
-    double balance;
-
-public:
-    NRIAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal)
-        : BankUser(accNum, accHolderName, atmPin), balance(bal) {}
-
-    double checkBalance() const {
+    double getBalance() const {
         return balance;
     }
 
-    void deposit(double amount) {
-        if (amount < 0) {
+    virtual ~BankAccount() = default;
+};
+
+// CurrentAccount class
+class CurrentAccount : public BankAccount {
+private:
+    double overdraftLimit;
+
+public:
+    CurrentAccount(const std::string& accNumber, double initialDeposit, double rate, double limit)
+        : BankAccount(accNumber, initialDeposit, rate, "Current Account"), overdraftLimit(limit) {}
+
+    void withdraw(double amount) override {
+        if (amount <= 0) {
+            throw DepositAmountNegative();
+        }
+        if (amount > balance + overdraftLimit) {
+            throw InsufficientFundsException();
+        }
+        if (amount >= 20000){
+            throw WithdrawalLimitExceedException();
+        }
+        balance -= amount;
+        std::cout << "Withdrawn: ₹" << amount << std::endl;
+    }
+
+    void display() const override {
+        std::cout << "Account Number: " << accountNumber << "\nType: Current Account\nBalance: ₹" << balance << "\nOverdraft Limit: ₹" << overdraftLimit << std::endl;
+    }
+};
+
+// SavingsAccount class
+class SavingsAccount : public BankAccount {
+private:
+    int withdrawalsLeft;
+
+public:
+    SavingsAccount(const std::string& accNumber, double initialDeposit, double rate, int withdrawals)
+        : BankAccount(accNumber, initialDeposit, rate, "Savings Account"), withdrawalsLeft(withdrawals) {}
+
+    void withdraw(double amount) override {
+        if (amount <= 0) {
+            throw DepositAmountNegative();
+        }
+        if (amount > balance) {
+            throw InsufficientFundsException();
+        }
+        if (withdrawalsLeft == 0) {
+            throw InvalidTransactionException();
+        }
+        if (amount >= 20000){
+            throw WithdrawalLimitExceedException();
+        }
+        balance -= amount;
+        withdrawalsLeft--;
+        std::cout << "Withdrawn: ₹" << amount << std::endl;
+    }
+
+    void display() const override {
+        std::cout << "Account Number: " << accountNumber << "\nType: Savings Account\nBalance: ₹" << balance << "\nWithdrawals Left: " << withdrawalsLeft << std::endl;
+    }
+};
+
+// FixedDeposit class
+class FixedDeposit : public BankAccount {
+private:
+    int durationMonths;
+    double penaltyPercentage;
+
+public:
+    FixedDeposit(const std::string& accNumber, double initialDeposit, double rate, int months, double penalty)
+        : BankAccount(accNumber, initialDeposit, rate, "Fixed Deposit"), durationMonths(months), penaltyPercentage(penalty) {}
+
+    void withdraw(double amount) override {
+        if (amount <= 0) {
+            throw DepositAmountNegative();
+        }
+        if (amount > balance) {
+            throw InsufficientFundsException();
+        }
+        if (durationMonths < 6) {
+            throw InvalidTransactionException();
+        }
+        if (amount >= 20000){
+            throw WithdrawalLimitExceedException();
+        }
+        // Calculate penalty
+        double penalty = (amount / 100) * penaltyPercentage;
+        balance -= (amount + penalty);
+        std::cout << "Withdrawn: ₹" << amount << " Penalty: ₹" << penalty << std::endl;
+    }
+
+    void display() const override {
+        std::cout << "Account Number: " << accountNumber << "\nType: Fixed Deposit\nBalance: ₹" << balance << "\nDuration: " << durationMonths << " months" << std::endl;
+    }
+};
+
+// NRI Account
+class NRIAccount : public BankAccount {
+public:
+    NRIAccount(const std::string& accNumber, double initialDeposit, double rate)
+        : BankAccount(accNumber, initialDeposit, rate, "NRI Account") {}
+
+    void deposit(double amount) override {
+        if (amount <= 0) {
             throw DepositAmountNegative();
         }
         balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Deposit", amount, "Deposited amount");
+        std::cout << "Deposited: ₹" << amount << std::endl;
     }
 
-    void withdraw(double amount) {
-        if (amount <= balance) {
-            balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
-        } else {
+    void withdraw(double amount) override {
+        if (amount <= 0) {
+            throw DepositAmountNegative();
+        }
+        if (amount > balance) {
             throw InsufficientFundsException();
         }
-    }
-
-    std::string getAccountInfo() const {
-        return "Account Number: " + getAccountNumber() + "\nAccount Holder: " + getAccountHolderName() + "\nBalance: ₹" + std::to_string(balance);
-    }
-
-    void recordTransaction(const std::string& transactionId, std::string date,const std::string& type, double amount, const std::string& description) {
-        transactions.emplace_back(transactionId,date,type, amount, description);
-    }
-
-    void displayTransactionHistory() const {
-        for (const auto& transaction : transactions) {
-            std::cout << transaction.getTransactionDetails() << std::endl;
+        if (amount >= 20000){
+            throw WithdrawalLimitExceedException();
         }
+        balance -= amount;
+        std::cout << "Withdrawn: ₹" << amount << std::endl;
     }
 
-    virtual ~NRIAccount() {}
+    void display() const override {
+        std::cout << "Account Number: " << accountNumber << "\nType: NRI Account\nBalance: ₹" << balance << std::endl;
+    }
 };
 
-// NROAccount class definition
-
-class NROAccount : public NRIAccount {
-private:
-    double balance;
-    double interestRate;
-    double tdsRate; // TDS (Tax Deducted at Source) rate for NRO account
-
+// API integration for fetching exchange rates
+class CurrencyConverter {
 public:
-    NROAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest)
-        : NRIAccount(accNum, accHolderName, atmPin, bal), balance(bal), interestRate(interest), tdsRate(0.309) {}
+    static double fetchExchangeRate(const std::string& fromCurrency, const std::string& toCurrency) {
+        // Example: Using external API to fetch exchange rates
+        utility::string_t url = U("https://api.exchangerate-api.com/v4/latest/") + utility::conversions::to_string_t(fromCurrency);
 
-    double checkBalance() const {
-        return balance;
-    }
-
-    void deposit(double amount) {
-        balance += amount;
-        std::cout << "Deposit of ₹" << amount << " successful.\n";
-    }
-
-    void withdraw(double amount) {
-        if (amount <= balance) {
-            balance -= amount;
-            std::cout << "Withdrawal of ₹" << amount << " successful.\n";
-        } else {
-            throw InsufficientFundsException();
-        }
-    }
-
-    void applyTDS() {
-        double tdsAmount = balance * tdsRate;
-        balance -= tdsAmount;
-        std::cout << "TDS of ₹" << tdsAmount << " deducted as per regulations.\n";
-    }
-
-    void deductTDS() {
-        double tdsAmount = checkBalance() * (tdsRate / 100);
-        if (checkBalance() < tdsAmount) {
-            throw InsufficientFundsException();
-        }
-        withdraw(tdsAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "TDS", tdsAmount, "TDS deducted");
-    }
-
-    // Method to fetch current exchange rates from an API
-    double fetchExchangeRate(const std::string& fromCurrency, const std::string& toCurrency) {
-        // Example: Using CPP Rest SDK for making HTTP request
-        utility::string_t url = U("https://api.exchangeratesapi.io/latest?base=") + utility::conversions::to_string_t(fromCurrency);
         http_client client(url);
+        http_response response = client.request(methods::GET).get();
 
-        return client.request(methods::GET).then([=](http_response response) {
-            if (response.status_code() == status_codes::OK) {
-                return response.extract_json();
-            } else {
-                throw std::runtime_error("Failed to fetch exchange rates.");
-            }
-        }).then([=](json::value json) {
-            double rate = json[U("rates")][utility::conversions::to_string_t(toCurrency)].as_double();
-            return rate;
-        }).get();
-    }
+        if (response.status_code() != status_codes::OK) {
+            throw std::runtime_error("Failed to fetch exchange rates.");
+        }
 
-    // Currency converter for NRO account using current market rates
-    void convertCurrency(double foreignAmount, const std::string& fromCurrency, const std::string& toCurrency) {
-        double exchangeRate = fetchExchangeRate(fromCurrency, toCurrency);
-        double inrAmount = foreignAmount * exchangeRate;
-        deposit(inrAmount); // Deposit the equivalent INR amount after conversion
-        std::cout << "Converted " << foreignAmount << " " << fromCurrency << " to INR at rate " << exchangeRate << ".\n";
-    }
-
-    void displayAccountSummary() {
-        std::cout << getAccountInfo() << std::endl;
-        std::cout << "Interest Rate: " << interestRate << "%" << std::endl;
-        std::cout << "TDS Rate: " << tdsRate << "%" << std::endl;
-        displayTransactionHistory();
-    }
-
-    void addInterest() {
-        double interestAmount = checkBalance() * (interestRate / 100);
-        deposit(interestAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
+        json::value jsonResponse = response.extract_json().get();
+        return jsonResponse[U("rates")].at(toCurrency).as_double();
     }
 };
 
-// NREAccount class definition
-
-class NREAccount : public NRIAccount {
-private:
-    double interestRate;
-
-public:
-    NREAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest)
-        : NRIAccount(accNum, accHolderName, atmPin, bal), interestRate(interest) {}
-
-    void addInterest() {
-        double interestAmount = checkBalance() * (interestRate / 100);
-        deposit(interestAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
-    }
-
-    void displayAccountSummary() {
-        std::cout << getAccountInfo() << std::endl;
-        std::cout << "Interest Rate: " << interestRate << "%" << std::endl;
-        displayTransactionHistory();
-    }
-};
-
-// AccountManager template class
-template<typename T>
-class AccountManager {
-private:
-    std::vector<T> accounts;
-
-public:
-    void addAccount(const T& account) {
-        accounts.push_back(account);
-    }
-
-    bool removeAccount(const std::string& accNum) {
-        for (auto it = accounts.begin(); it != accounts.end(); ++it) {
-            if (it->getAccountNumber() == accNum) {
-                accounts.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void displayAllAccounts() const {
-        for (const auto& account : accounts) {
-            std::cout << account.getAccountInfo() << std::endl;
-        }
-    }
-
-    T* findAccount(const std::string& accountNumber) {
-        for (auto& account : accounts) {
-            if (account.getAccountNumber() == accountNumber) {
-                return &account;
-            }
-        }
-        return nullptr;
-    }
-};
-
-// Main function
 int main() {
     try {
+        // Example usage
+        BankUser user("1234567890", "John Doe", "1234");
+        user.getAccountHolderDetails("1234");
 
-    } 
-    catch (const InsufficientFundsException& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    catch (const WithdrawalLimitExceedException& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        SavingsAccount savings("S12345", 5000, 3.5, 3);
+        savings.deposit(2000);
+        savings.withdraw(1000);
+
+        CurrentAccount current("C67890", 10000, 1.5, 2000);
+        current.withdraw(5000);
+
+        FixedDeposit fd("F54321", 10000, 5.0, 12, 2.0);
+        fd.withdraw(5000);
+
+        NRIAccount nri("N98765", 20000, 4.0);
+        nri.deposit(5000);
+        nri.withdraw(3000);
+
+        // Fetch exchange rate example
+        double exchangeRate = CurrencyConverter::fetchExchangeRate("USD", "INR");
+        std::cout << "Exchange rate (USD to INR): " << exchangeRate << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
     }
     return 0;
 }
+
