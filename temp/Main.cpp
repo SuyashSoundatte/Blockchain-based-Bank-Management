@@ -482,28 +482,7 @@ public:
 
 int main() {
     try {
-        // Example usage
-        BankUser user("1234567890", "John Doe", "1234");
-        user.getAccountHolderDetails("1234");
-
-        SavingsAccount savings("S12345", 5000, 3.5, 3);
-        savings.deposit(2000);
-        savings.withdraw(1000);
-
-        CurrentAccount current("C67890", 10000, 1.5, 2000);
-        current.withdraw(5000);
-
-        FixedDeposit fd("F54321", 10000, 5.0, 12, 2.0);
-        fd.withdraw(5000);
-
-        NRIAccount nri("N98765", 20000, 4.0);
-        nri.deposit(5000);
-        nri.withdraw(3000);
-
-        // Fetch exchange rate example
-        double exchangeRate = CurrencyConverter::fetchExchangeRate("USD", "INR");
-        std::cout << "Exchange rate (USD to INR): " << exchangeRate << std::endl;
-
+        
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }

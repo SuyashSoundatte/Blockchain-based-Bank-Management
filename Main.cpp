@@ -614,7 +614,7 @@ public:
     virtual ~NRIAccount() {}
 };
 
-// NROAccount class definition
+//* NROAccount class definition with currency Convertor API
 
 class NROAccount : public NRIAccount {
 private:
@@ -809,12 +809,6 @@ public:
 int main() {
     try {
 
-    } 
-    catch (const InsufficientFundsException& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    catch (const WithdrawalLimitExceedException& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
     }
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
