@@ -113,23 +113,6 @@ public:
     WithdrawalLimitExceedException(): BankingException("Withdrawl limit exceded, After this charges may applies") {}
 };
 
-// TransactionHistory class
-class TransactionHistory {
-private:
-    std::vector<Transaction> transactions;
-
-public:
-    void addTransaction(const Transaction& transaction) {
-        transactions.push_back(transaction);
-    }
-
-    void displayTransactionHistory() const {
-        for (const auto& transaction : transactions) {
-            std::cout << transaction.getTransactionDetails() << std::endl;
-        }
-    }
-};
-
 // Transaction class
 class Transaction {
 private:
@@ -145,6 +128,23 @@ public:
     
     std::string getTransactionDetails() const {
         return "Transaction ID: " + transactionId + "\nDate: " + date + "\nType: " + typeOfTransaction + "\nAmount: ₹" + std::to_string(amount) + "\nDescription: " + description;
+    }
+};
+
+// TransactionHistory class
+class TransactionHistory {
+private:
+    std::vector<Transaction> transactions;
+
+public:
+    void addTransaction(const Transaction& transaction) {
+        transactions.push_back(transaction);
+    }
+
+    void displayTransactionHistory() const {
+        for (const auto& transaction : transactions) {
+            std::cout << transaction.getTransactionDetails() << std::endl;
+        }
     }
 };
 
