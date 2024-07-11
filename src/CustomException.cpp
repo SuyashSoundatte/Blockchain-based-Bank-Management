@@ -1,40 +1,22 @@
-#include<iostream>
-#include<stdexcept>
-#include<string>
-#include<exception>
+#include "CustomException.h"
 
-class InsufficientFundsException : public std::exception {
-private:
-    std::string message;
+BankingException::BankingException(const std::string& message) : message_(message) {}
 
-public:
-    InsufficientFundsException(const std::string& msg) : message(msg) {}
+const char* BankingException::what() const noexcept {
+    return message_.c_str();
+}
 
-    virtual const char* what() const noexcept override {
-        return message.c_str();
-    }
-};
+// Implementing AccountNotFoundException
+AccountNotFoundException::AccountNotFoundException() : BankingException("Account not found.") {}
 
-class WithdrawalLimitExceedException : public std::exception {
-private:
-    std::string message;
+// Implementing InvalidTransactionException
+InvalidTransactionException::InvalidTransactionException() : BankingException("Invalid transaction.") {}
 
-public:
-    WithdrawalLimitExceedException(const std::string& msg) : message(msg) {}
+// Implementing InsufficientFundsException
+InsufficientFundsException::InsufficientFundsException() : BankingException("Insufficient funds.") {}
 
-    virtual const char* what() const noexcept override {
-        return message.c_str();
-    }
-};
+// Implementing DepositAmountNegative
+DepositAmountNegative::DepositAmountNegative() : BankingException("Deposit amount should not be negative!") {}
 
-class DepositAmountNegative: public std::exception{
-    private:
-        std::string message;
-
-    public:
-        DepositAmountNegative(const std::string& msg) : message(msg) {}
-
-        virtual const char* what() const noexcept override {
-            return message.c_str();
-        }
-};
+// Implementing WithdrawalLimitExceedException
+WithdrawalLimitExceedException::WithdrawalLimitExceedException() : BankingException("Withdrawl limit exceeded, charges may apply.") {}

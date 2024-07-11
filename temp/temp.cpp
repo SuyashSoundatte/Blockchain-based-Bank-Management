@@ -23,27 +23,7 @@ public:
         std::string id;
         do {
             id = generateUniqueID();
-        } while (!isUnique(id));class NREAccount : public NRIAccount {
-private:
-    double interestRate;
-
-public:
-    NREAccount(std::string accNum, std::string accHolderName, std::string atmPin, double bal, double interest)
-        : NRIAccount(accNum, accHolderName, atmPin, bal), interestRate(interest) {}
-
-    void addInterest() {
-        double interestAmount = checkBalance() * (interestRate / 100);
-        deposit(interestAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Interest", interestAmount, "Interest added");
-    }
-
-    void displayAccountSummary() {
-        std::cout << getAccountInfo() << std::endl;
-        std::cout << "Interest Rate: " << interestRate << "%" << std::endl;
-        displayTransactionHistory();
-    }
-};
-
+        } while (!isUnique(id));
         generatedIDs.insert(id);
         return id;
     }
@@ -76,22 +56,25 @@ private:
 std::unordered_set<std::string> TransactionIDGenerator::generatedIDs;
 
 // Get Current Date and time
-std::string getCurrentDate(){
-    time_t tt; 
+class CurrentTime{
+    public:
+        static std::string getCurrentDate(){
+            time_t tt;
 
-	// Declaring variable to store return value of 
-	// localtime() 
-	struct tm* ti; 
+            // Declaring variable to store return value of 
+            // localtime() 
+            struct tm* ti;
 
-	// Applying time() 
-	time(&tt); 
+            // Applying time() 
+            time(&tt);
 
-	// Using localtime() 
-	ti = localtime(&tt); 
-    
-    std::string time = asctime(ti);
-    return time; 
-}
+            // Using localtime() 
+            ti = localtime(&tt);
+            
+            std::string time = asctime(ti);
+            return time;
+        }
+};
 
 // Custom exceptions
 
@@ -131,6 +114,24 @@ class WithdrawalLimitExceedException: public BankingException{
         WithdrawalLimitExceedException(): BankingException("Withdrawl limit exceded, After this charges may applies") {}
 };
 
+// Transaction class
+class Transaction {
+private:
+    std::string transactionId;
+    std::string date;
+    std::string typeOfTransaction;
+    double amount;
+    std::string description;
+
+public:
+    Transaction(const std::string transactionId, const std::string& date, const std::string& type, double amt, const std::string& desc)
+        : transactionId(TransactionIDGenerator::generateTransactionID()), date(date), typeOfTransaction(type), amount(amt), description(desc) {}
+    
+    std::string getTransactionDetails() const {
+        return "Transaction ID: " + transactionId + "\nDate: " + date + "\nType: " + typeOfTransaction + "\nAmount: ₹" + std::to_string(amount) + "\nDescription: " + description;
+    }
+};
+
 // TransactionHistory class
 class TransactionHistory {
 private:
@@ -145,24 +146,6 @@ public:
         for (const auto& transaction : transactions) {
             std::cout << transaction.getTransactionDetails() << std::endl;
         }
-    }
-};
-
-// Transaction class
-class Transaction {
-private:
-    std::string transactionId;
-    std::string date;
-    std::string typeOfTransaction;
-    double amount;
-    std::string description;
-
-public:
-    Transaction(const std::string transactionId, const std::string& date, const std::string& type, double amt, const std::string& desc)
-        : transactionId(TransactionIDGenerator::generateTransactionID()), date(date), typeOfTransaction(type), amount(amt), description(desc) {}
-
-    std::string getTransactionDetails() const {
-        return "Transaction ID: " + transactionId + "\nDate: " + date + "\nType: " + typeOfTransaction + "\nAmount: ₹" + std::to_string(amount) + "\nDescription: " + description;
     }
 };
 
@@ -214,7 +197,7 @@ public:
 
     void makePayment(double amount) {
         loanAmount -= amount;
-        transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Loan payment", amount, "Loan payment"));
+        transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Loan payment", amount, "Loan payment"));
     }
 
     void getLoanDetails() const {
@@ -223,6 +206,10 @@ public:
         transactionHistory.displayTransactionHistory();
     }
 };
+#if 0 
+types of loans
+personal, car, home loan
+#endif
 
 // CreditCardAccount class
 class CreditCardAccount : public BankUser {
@@ -240,7 +227,7 @@ public:
     void makePurchase(double amount) {
         if (currentSpending + amount <= creditLimit) {
             currentSpending += amount;
-            transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Credit Card Account", amount, "Purchase happens using Credit Card"));
+            transactionHistory.addTransaction(Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Credit Card Account", amount, "Purchase happens using Credit Card"));
         } else {
             throw InvalidTransactionException();
         }
@@ -249,7 +236,7 @@ public:
     void makePayment(double amount) {
         if (amount <= currentSpending) {
             currentSpending -= amount;
-            transactionHistory.addTransaction((Transaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Credit Card Account", amount, "Credit Card Payment Done")));
+            transactionHistory.addTransaction((Transaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Credit Card Account", amount, "Credit Card Payment Done")));
         } else {
             throw InvalidTransactionException();
         }
@@ -290,13 +277,13 @@ public:
             throw DepositAmountNegative();
         }
         balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Deposit", amount, "Deposited amount");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Deposit", amount, "Deposited amount");
     }
 
     virtual void withdraw(double amount) {
         if (amount <= balance && balance<50000) {
             balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
         } else {
             throw InsufficientFundsException();
         }
@@ -339,7 +326,7 @@ public:
     void addInterest() {
         double interestAmount = balance * (interestRate / 100);
         balance += interestAmount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Interest", interestAmount, "Interest added");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
     }
 
     double checkBalance() const {
@@ -351,19 +338,19 @@ public:
             throw DepositAmountNegative();
         }
         balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Deposit", amount, "Deposited amount");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Deposit", amount, "Deposited amount");
     }
 
     void withdraw(double amount) {
         if (withdrawalCount >= maxWithdrawalsPerMonth) {
             balance -= withdrawalFee;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Fee", withdrawalFee, "Withdrawal limit exceeded fee");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Fee", withdrawalFee, "Withdrawal limit exceeded fee");
             std::cout << "Withdrawal limit exceeded for the month. Fee applied: ₹" << withdrawalFee << std::endl;
         }
         if (amount <= balance - minimumBalance) {
             balance -= amount;
             withdrawalCount++;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(), getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(), CurrentTime::getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
         } else {
             throw InsufficientFundsException();
         }
@@ -400,7 +387,7 @@ class ZeroBalanceSavingsAccount : public BankUser {
                 throw DepositAmountNegative();
             }
             balance += amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Deposit", amount, "Deposited amount");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Deposit", amount, "Deposited amount");
         }
 
         void recordTransaction(const std::string& transactionId,const std::string date, const std::string& type, double amount, const std::string& description) {
@@ -410,13 +397,13 @@ class ZeroBalanceSavingsAccount : public BankUser {
         void withdraw(double amount) {
             if (withdrawalCount >= maxWithdrawalsPerDay) {
                 balance -= withdrawalFee;
-                recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Fee", withdrawalFee, "Withdrawal limit exceeded fee");
+                recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Fee", withdrawalFee, "Withdrawal limit exceeded fee");
                 std::cout << "Withdrawal limit exceeded for the month. Fee applied: ₹" << withdrawalFee << std::endl;
             }
             if (amount <= balance - minimumBalance) {
                 balance -= amount;
                 withdrawalCount++;
-                recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
+                recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
             } else {
                 throw InsufficientFundsException();
             }
@@ -475,26 +462,28 @@ public:
 
 
 // OverdraftAccount derived class
-class OverdraftAccount : public CurrentAccount {
+class Overdraft : public CurrentAccount {
 private:
     double overdraftLimit;
     double overdraftFee;
 
 public:
-    OverdraftAccount(double m_overdraftLimit, double m_overdraftFee, std::string accNum, std::string atmPin, std::string accHolderName, double bal)
+    Overdraft(double m_overdraftLimit, double m_overdraftFee, std::string accNum, std::string atmPin, std::string accHolderName, double bal)
         : CurrentAccount(accNum, atmPin , accHolderName, bal), overdraftLimit(m_overdraftLimit), overdraftFee(m_overdraftFee) {}
 
     void withdraw(double amount) override {
         if (amount <= balance) {
             balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
-        } else if (amount <= balance + overdraftLimit) {
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
+        } 
+        else if (amount <= balance + overdraftLimit) {
             double overdraftAmount = amount - balance;
             balance -= amount;
             balance -= overdraftFee; // Apply overdraft fee
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Overdraft", overdraftAmount, "Overdraft used");
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Overdraft Fee", overdraftFee, "Overdraft fee applied");
-        } else {
+
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Overdraft Fee", overdraftFee, "Overdraft fee applied");
+        } 
+        else {
             throw WithdrawalLimitExceedException();
         }
     }
@@ -525,11 +514,11 @@ public:
         if (isMatured) {
             double interestAmount = balance * (interestRate / 100);
             balance += interestAmount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Interest", interestAmount, "Interest added on maturity");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Interest", interestAmount, "Interest added on maturity");
         }
         if (amount <= balance) {
             balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(),"Withdrawal", amount, "Withdrawn amount");
         } else {
             throw InsufficientFundsException();
         }
@@ -565,13 +554,13 @@ public:
             throw DepositAmountNegative();
         }
         balance += amount;
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Deposit", amount, "Deposited amount");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Deposit", amount, "Deposited amount");
     }
 
     void withdraw(double amount) {
         if (amount <= balance) {
             balance -= amount;
-            recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
+            recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Withdrawal", amount, "Withdrawn amount");
         } else {
             throw InsufficientFundsException();
         }
@@ -636,7 +625,7 @@ public:
             throw InsufficientFundsException();
         }
         withdraw(tdsAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "TDS", tdsAmount, "TDS deducted");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "TDS", tdsAmount, "TDS deducted");
     }
 
     // Method to fetch current exchange rates from an API
@@ -675,7 +664,7 @@ public:
     void addInterest() {
         double interestAmount = checkBalance() * (interestRate / 100);
         deposit(interestAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Interest", interestAmount, "Interest added");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
     }
 };
 
@@ -692,7 +681,7 @@ public:
     void addInterest() {
         double interestAmount = checkBalance() * (interestRate / 100);
         deposit(interestAmount);
-        recordTransaction(TransactionIDGenerator::generateTransactionID(),getCurrentDate(), "Interest", interestAmount, "Interest added");
+        recordTransaction(TransactionIDGenerator::generateTransactionID(),CurrentTime::getCurrentDate(), "Interest", interestAmount, "Interest added");
     }
 
     void displayAccountSummary() {
@@ -742,7 +731,7 @@ public:
 // Main function
 int main() {
     try {
-
+        std::cout<<"All Set!"<<std::endl;
     } 
     catch (const InsufficientFundsException& e) {
         std::cerr << "Error: " << e.what() << std::endl;
