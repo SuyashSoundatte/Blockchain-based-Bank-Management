@@ -9,6 +9,8 @@
 #include <unordered_set>
 #include <random>
 #include <cpprest/http_client.h>
+#include <sqlite3.h>
+#include <sqlite3ext.h>
 
 using namespace web;
 using namespace web::http;
@@ -480,10 +482,25 @@ public:
     }
 };
 
+class DataBaseException: public std::exception {
+    std::string message;
+
+    public:
+        DataBaseException(std::string msg): message(msg) {}
+
+        virtual const char* what() const noexcept override {
+            return message.c_str();
+        }
+};
+
 int main() {
     try {
         
-    } catch (const std::exception& e) {
+    }
+    catch (const DataBaseException& e){
+        std::cerr<<"DataBase Exception: "<<e.what()<<std::endl;
+    }
+    catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }
     return 0;
