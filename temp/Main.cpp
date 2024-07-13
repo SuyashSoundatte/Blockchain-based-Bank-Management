@@ -495,7 +495,8 @@ class DataBaseException: public std::exception {
 
 int main() {
     try {
-        
+        int ch;
+        std::cout<<""
     }
     catch (const DataBaseException& e){
         std::cerr<<"DataBase Exception: "<<e.what()<<std::endl;
