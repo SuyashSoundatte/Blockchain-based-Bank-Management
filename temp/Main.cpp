@@ -11,6 +11,7 @@
 #include <cpprest/http_client.h>
 #include <sqlite3.h>
 #include <sqlite3ext.h>
+#include <curl/curl.h>
 
 using namespace web;
 using namespace web::http;
@@ -493,9 +494,53 @@ class DataBaseException: public std::exception {
         }
 };
 
+void sendTransactionToBlockchain(const std::string& transactionID, const std::string& accountNumber, double amount, const std::string& transactionType, const std::string& timestamp) {
+    CURL* curl;
+    CURLcode res;
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl = curl_easy_init();
+
+    if(curl) {
+        // Set the URL of the blockchain API endpoint
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:3000/api/transaction");
+
+        // Create JSON payload
+        std::string jsonData = "{\"transactionID\":\"" + transactionID + "\",\"accountNumber\":\"" + accountNumber + "\",\"amount\":" + std::to_string(amount) + ",\"transactionType\":\"" + transactionType + "\",\"timestamp\":\"" + timestamp + "\"}";
+
+        // Set the payload
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonData.c_str());
+
+        // Set HTTP headers
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        // Perform the request and check for errors
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        // Clean up
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
+    }
+
+    curl_global_cleanup();
+}
+
 int main() {
     try {
-        
+        // Example transaction data
+        std::string transactionID = TransactionIDGenerator::generateTransactionID();
+        std::string accountNumber = "123456789";
+        double amount = 1000.00;
+        std::string transactionType = "deposit";
+        std::string timestamp = "2024-07-16T12:34:56Z";
+
+        // Send transaction data to the blockchain
+        sendTransactionToBlockchain(transactionID, accountNumber, amount, transactionType, timestamp);
     }
     catch (const DataBaseException& e){
         std::cerr<<"DataBase Exception: "<<e.what()<<std::endl;
@@ -505,4 +550,3 @@ int main() {
     }
     return 0;
 }
-
